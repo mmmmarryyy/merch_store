@@ -1,3 +1,4 @@
+// Main package
 package main
 
 import (
@@ -22,7 +23,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	handler := handlers.NewHandler(db)
 	r := mux.NewRouter()
@@ -33,5 +36,8 @@ func main() {
 	r.HandleFunc("/api/buy/{item}", handler.BuyHandler)
 
 	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	err = http.ListenAndServe(":8080", r)
+	if err != nil {
+		log.Panicf("Failed in server: %v", err)
+	}
 }

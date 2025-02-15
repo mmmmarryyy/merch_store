@@ -1,3 +1,4 @@
+// Package auth - package for working with authentication and JWT.
 package auth
 
 import (
@@ -9,11 +10,13 @@ import (
 
 var jwtKey = []byte("your_secret_key")
 
+// Claims contains information about user and time when user's jwt token expires...
 type Claims struct {
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
+// GenerateToken generates jwt token...
 func GenerateToken(username string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
@@ -27,12 +30,12 @@ func GenerateToken(username string) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
+// ValidateToken checks token is valid...
 func ValidateToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(_ *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// InfoHandler handles /api/info...
 func (h *Handler) InfoHandler(w http.ResponseWriter, r *http.Request) {
 	claims, err := auth.ValidateToken(r.Header.Get("Authorization"))
 	if err != nil {
@@ -39,5 +40,9 @@ func (h *Handler) InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

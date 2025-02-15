@@ -1,0 +1,22 @@
+linters:
+  enable:
+    - revive
+    - goimports
+    - staticcheck
+    - unconvert
+    - bodyclose
+    - goconst
+    - godot
+    - gofmt
+    - misspell
+    - prealloc
+    - revive
+    - stylecheck
+    - unused
+    - whitespace
+    - unparam
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

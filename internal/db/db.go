@@ -1,5 +1,7 @@
-// TODO: split into several files
+// Package db - package for working with the PostgreSQL database.
 package db
+
+// TODO: split package into several files
 
 import (
 	"context"
@@ -10,11 +12,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Database ...
 type Database struct {
 	pool *pgxpool.Pool
 	ctx  context.Context
 }
 
+// NewDatabase connects to database...
 func NewDatabase(host string, port int, user string, password string, dbname string) (*Database, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", user, password, host, port, dbname)
 
@@ -40,11 +44,13 @@ func NewDatabase(host string, port int, user string, password string, dbname str
 	return &Database{pool: pool, ctx: ctx}, nil
 }
 
+// Close function closes database...
 func (db *Database) Close() error {
 	db.pool.Close()
 	return nil
 }
 
+// GetUserByUsername finds user by name in database...
 func (db *Database) GetUserByUsername(username string) (*models.User, error) {
 	var user models.User
 	err := db.pool.QueryRow(db.ctx, "SELECT id, username, password_hash, coins FROM users WHERE username = $1", username).
@@ -55,6 +61,7 @@ func (db *Database) GetUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
+// CreateUser creates user in database...
 func (db *Database) CreateUser(user *models.User) error {
 	_, err := db.pool.Exec(db.ctx, "INSERT INTO users (username,password_hash,coins) VALUES ($1,$2,1000);", user.Username, user.PasswordHash)
 	if err != nil {
@@ -64,6 +71,7 @@ func (db *Database) CreateUser(user *models.User) error {
 	return nil
 }
 
+// TransferCoins implements logic for sending coins from one user to another in database...
 func (db *Database) TransferCoins(fromUserID, toUserID, amount int) error {
 	tx, err := db.pool.Begin(db.ctx)
 	if err != nil {
@@ -71,7 +79,9 @@ func (db *Database) TransferCoins(fromUserID, toUserID, amount int) error {
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(db.ctx)
+			if rb := tx.Rollback(db.ctx); rb != nil {
+				log.Fatalf("query failed: %v, unable to abort: %v", err, rb)
+			}
 		} else {
 			err = tx.Commit(db.ctx)
 		}
@@ -96,6 +106,7 @@ func (db *Database) TransferCoins(fromUserID, toUserID, amount int) error {
 	return nil
 }
 
+// GetMerchByName finds merch by it's name in database...
 func (db *Database) GetMerchByName(name string) (*models.Merch, error) {
 	var merch models.Merch
 	err := db.pool.QueryRow(db.ctx, "SELECT id, name, price FROM merch WHERE name = $1", name).
@@ -106,6 +117,7 @@ func (db *Database) GetMerchByName(name string) (*models.Merch, error) {
 	return &merch, nil
 }
 
+// BuyMerch implements buying merch logic in database...
 func (db *Database) BuyMerch(userID, merchID, price int) error {
 	tx, err := db.pool.Begin(db.ctx)
 	if err != nil {
@@ -114,7 +126,9 @@ func (db *Database) BuyMerch(userID, merchID, price int) error {
 
 	defer func() {
 		if err != nil {
-			tx.Rollback(db.ctx)
+			if rb := tx.Rollback(db.ctx); rb != nil {
+				log.Fatalf("query failed: %v, unable to abort: %v", err, rb)
+			}
 		} else {
 			err = tx.Commit(db.ctx)
 		}
@@ -138,6 +152,7 @@ func (db *Database) BuyMerch(userID, merchID, price int) error {
 	return nil
 }
 
+// GetUserInventory gets user inventory from database...
 func (db *Database) GetUserInventory(userID int) ([]models.InventoryInfo, error) {
 	rows, err := db.pool.Query(db.ctx, `
         SELECT m.name, i.quantity
@@ -168,6 +183,7 @@ func (db *Database) GetUserInventory(userID int) ([]models.InventoryInfo, error)
 	return inventory, nil
 }
 
+// GetUserTransactions gets user transactions from database...
 func (db *Database) GetUserTransactions(userID int) (models.CoinHistory, error) {
 	var history models.CoinHistory
 

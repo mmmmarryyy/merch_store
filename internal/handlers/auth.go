@@ -1,3 +1,4 @@
+// Package handlers - package for processing HTTP requests.
 package handlers
 
 import (
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// AuthHandler handles /api/auth...
 func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -36,11 +38,9 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 			return
 		}
-	} else {
-		if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
-			http.Error(w, "Invalid password", http.StatusUnauthorized)
-			return
-		}
+	} else if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		return
 	}
 
 	token, err := auth.GenerateToken(user.Username)
@@ -50,5 +50,9 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(models.AuthResponse{Token: token})
+	err = json.NewEncoder(w).Encode(models.AuthResponse{Token: token})
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

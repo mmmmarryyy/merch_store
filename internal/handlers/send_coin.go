@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// SendCoinHandler handles for /api/sendCoin...
 func (h *Handler) SendCoinHandler(w http.ResponseWriter, r *http.Request) {
 	claims, err := auth.ValidateToken(r.Header.Get("Authorization"))
 	if err != nil {

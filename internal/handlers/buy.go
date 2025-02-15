@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// BuyHandler handles /api/buy/{item}...
 func (h *Handler) BuyHandler(w http.ResponseWriter, r *http.Request) {
 	claims, err := auth.ValidateToken(r.Header.Get("Authorization"))
 	if err != nil {

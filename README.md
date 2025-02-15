@@ -25,6 +25,8 @@ docker-compose -f docker-compose.test.yml --project-name merch_test up -d
 go test -v ./... -p 1
 ```
 
+Тесты лежат либо в необходимых папках в `/internal`, либо в `/test`
+
 ### Покрытие
 
 При запуске 

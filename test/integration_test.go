@@ -287,7 +287,7 @@ func TestInfoHandler_Unauthorized(t *testing.T) {
 
 	// 2. Make a request to /api/info with an invalid token format
 	infoReqInvalid, _ := http.NewRequest("GET", "/api/info", nil)
-	infoReqInvalid.Header.Set("Authorization", "invalid-token-format") // Missing "Bearer"
+	infoReqInvalid.Header.Set("Authorization", "invalid-token-format")
 	infoRespInvalid := executeRequest(*infoReqInvalid)
 
 	assert.Equal(t, http.StatusUnauthorized, infoRespInvalid.Code)

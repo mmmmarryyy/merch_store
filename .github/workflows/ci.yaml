@@ -29,10 +29,8 @@ jobs:
       - name: Run golangci-lint
         run: golangci-lint run ./...
 
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install docker-compose-plugin
+      - name: Set up Docker
+        uses: docker/setup-docker@v2
 
       - name: Start Test Database
         run: docker compose -f docker-compose.test.yml --project-name merch_test up -d

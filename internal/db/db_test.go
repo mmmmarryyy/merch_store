@@ -15,9 +15,9 @@ func TestMain(m *testing.M) {
 	SetupTestDB(&testDB)
 	code := m.Run()
 
-	os.Exit(code)
 	ClearDatabase(testDB)
-	testDB.Close()
+	_ = testDB.Close()
+	os.Exit(code)
 }
 
 func TestGetUserByUsername(t *testing.T) {

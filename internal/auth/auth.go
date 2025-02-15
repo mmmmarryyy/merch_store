@@ -16,10 +16,12 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+// TokenValidator validates jwt tokens...
 type TokenValidator interface {
 	ValidateToken(tokenString string) (*Claims, error)
 }
 
+// DefaultValidator is the default implementation of TokenValidator...
 type DefaultValidator struct{}
 
 // GenerateToken generates jwt token...

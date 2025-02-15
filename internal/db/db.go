@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// DB interface...
 type DB interface {
 	GetUserByUsername(username string) (*models.User, error)
 	CreateUser(user *models.User) error

@@ -32,12 +32,6 @@ func setupHandler() {
 	router.HandleFunc("/api/buy/{item}", handler.BuyHandler)
 }
 
-func executeRequest(req http.Request) httptest.ResponseRecorder {
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, &req)
-	return *rr
-}
-
 func generateAuthToken(username string) string {
 	token, err := auth.GenerateToken(username)
 	if err != nil {
@@ -51,9 +45,9 @@ func TestMain(m *testing.M) {
 	setupHandler()
 	code := m.Run()
 
-	os.Exit(code)
 	db.ClearDatabase(testDB)
-	testDB.Close()
+	_ = testDB.Close()
+	os.Exit(code)
 }
 
 func TestAuthHandler_CreateUser(t *testing.T) {

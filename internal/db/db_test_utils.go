@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// ClearDatabase returns database to default state...
 func ClearDatabase(db *Database) {
 	_, err := db.Pool.Exec(db.Ctx, "DELETE FROM transactions")
 	if err != nil {
@@ -46,6 +47,7 @@ func fillMerchTable(db *Database) {
 	}
 }
 
+// CreateTables creates database tables...
 func CreateTables(db *Database) {
 	tableCreationSQL := []string{
 		`CREATE TABLE IF NOT EXISTS users (
@@ -82,6 +84,7 @@ func CreateTables(db *Database) {
 	}
 }
 
+// SetupTestDB setup database for testing...
 func SetupTestDB(testDB **Database) {
 	port, err := strconv.Atoi("5433") // TODO: move consts to params or env
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
-	"merch_store/internal/auth"
 	"merch_store/internal/db"
 	"merch_store/internal/handlers"
 	"merch_store/internal/models"
@@ -41,22 +39,14 @@ func executeRequest(req http.Request) httptest.ResponseRecorder {
 	return *rr
 }
 
-func generateAuthToken(username string) string {
-	token, err := auth.GenerateToken(username)
-	if err != nil {
-		log.Fatalf("Failed to generate token: %v", err)
-	}
-	return token
-}
-
 func TestMain(m *testing.M) {
 	db.SetupTestDB(&testDB)
 	setupHandler()
 	code := m.Run()
 
-	os.Exit(code)
 	db.ClearDatabase(testDB)
-	testDB.Close()
+	_ = testDB.Close()
+	os.Exit(code)
 }
 
 func TestBuyMerchScenario(t *testing.T) {

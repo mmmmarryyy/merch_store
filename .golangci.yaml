@@ -15,6 +15,14 @@ linters:
     - unused
     - whitespace
     - unparam
+    - errcheck
+
+linter-settings:
+  errcheck: 
+    check-type-assertions: true
+    check-blank: true
+  staticcheck:
+    checks: ["all"]
 
 issues:
   exclude-use-default: false

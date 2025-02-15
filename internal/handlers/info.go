@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
-	"merch_store/internal/auth"
 	"merch_store/internal/models"
 	"net/http"
 )
 
 // InfoHandler handles /api/info...
 func (h *Handler) InfoHandler(w http.ResponseWriter, r *http.Request) {
-	claims, err := auth.ValidateToken(r.Header.Get("Authorization"))
+	claims, err := h.TokenValidator.ValidateToken(r.Header.Get("Authorization"))
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

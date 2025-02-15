@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"merch_store/internal/auth"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,7 +8,7 @@ import (
 
 // BuyHandler handles /api/buy/{item}...
 func (h *Handler) BuyHandler(w http.ResponseWriter, r *http.Request) {
-	claims, err := auth.ValidateToken(r.Header.Get("Authorization"))
+	claims, err := h.TokenValidator.ValidateToken(r.Header.Get("Authorization"))
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

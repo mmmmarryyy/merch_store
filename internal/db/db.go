@@ -12,10 +12,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type DB interface {
+	GetUserByUsername(username string) (*models.User, error)
+	CreateUser(user *models.User) error
+	TransferCoins(fromUserID, toUserID, amount int) error
+	GetMerchByName(name string) (*models.Merch, error)
+	BuyMerch(userID, merchID, price int) error
+	GetUserInventory(userID int) ([]models.InventoryInfo, error)
+	GetUserTransactions(userID int) (models.CoinHistory, error)
+	Close() error
+}
+
 // Database ...
 type Database struct {
-	pool *pgxpool.Pool
-	ctx  context.Context
+	Pool *pgxpool.Pool
+	Ctx  context.Context
 }
 
 // NewDatabase connects to database...
@@ -28,32 +39,32 @@ func NewDatabase(host string, port int, user string, password string, dbname str
 		return nil, err
 	}
 
-	ctx := context.Background()
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	Ctx := context.Background()
+	Pool, err := pgxpool.NewWithConfig(Ctx, config)
 	if err != nil {
 		log.Printf("Failed to connect to database: %v", err)
 		return nil, err
 	}
 
-	err = pool.Ping(ctx) // Ping the database to verify the connection
+	err = Pool.Ping(Ctx) // Ping the database to verify the connection
 	if err != nil {
 		log.Printf("Failed to ping database: %v", err)
 		return nil, err
 	}
 
-	return &Database{pool: pool, ctx: ctx}, nil
+	return &Database{Pool: Pool, Ctx: Ctx}, nil
 }
 
 // Close function closes database...
 func (db *Database) Close() error {
-	db.pool.Close()
+	db.Pool.Close()
 	return nil
 }
 
 // GetUserByUsername finds user by name in database...
 func (db *Database) GetUserByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := db.pool.QueryRow(db.ctx, "SELECT id, username, password_hash, coins FROM users WHERE username = $1", username).
+	err := db.Pool.QueryRow(db.Ctx, "SELECT id, username, password_hash, coins FROM users WHERE username = $1", username).
 		Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Coins)
 	if err != nil {
 		return nil, err
@@ -63,7 +74,7 @@ func (db *Database) GetUserByUsername(username string) (*models.User, error) {
 
 // CreateUser creates user in database...
 func (db *Database) CreateUser(user *models.User) error {
-	_, err := db.pool.Exec(db.ctx, "INSERT INTO users (username,password_hash,coins) VALUES ($1,$2,1000);", user.Username, user.PasswordHash)
+	_, err := db.Pool.Exec(db.Ctx, "INSERT INTO users (username,password_hash,coins) VALUES ($1,$2,1000);", user.Username, user.PasswordHash)
 	if err != nil {
 		log.Printf("Failed to create user: %v", err)
 		return err
@@ -73,31 +84,31 @@ func (db *Database) CreateUser(user *models.User) error {
 
 // TransferCoins implements logic for sending coins from one user to another in database...
 func (db *Database) TransferCoins(fromUserID, toUserID, amount int) error {
-	tx, err := db.pool.Begin(db.ctx)
+	tx, err := db.Pool.Begin(db.Ctx)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
-			if rb := tx.Rollback(db.ctx); rb != nil {
+			if rb := tx.Rollback(db.Ctx); rb != nil {
 				log.Fatalf("query failed: %v, unable to abort: %v", err, rb)
 			}
 		} else {
-			err = tx.Commit(db.ctx)
+			err = tx.Commit(db.Ctx)
 		}
 	}()
 
-	_, err = tx.Exec(db.ctx, "UPDATE users SET coins = coins - $1 WHERE id = $2", amount, fromUserID)
+	_, err = tx.Exec(db.Ctx, "UPDATE users SET coins = coins - $1 WHERE id = $2", amount, fromUserID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(db.ctx, "UPDATE users SET coins = coins + $1 WHERE id = $2", amount, toUserID)
+	_, err = tx.Exec(db.Ctx, "UPDATE users SET coins = coins + $1 WHERE id = $2", amount, toUserID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(db.ctx, "INSERT INTO transactions (from_user_id, to_user_id, amount) VALUES ($1, $2, $3)",
+	_, err = tx.Exec(db.Ctx, "INSERT INTO transactions (from_user_id, to_user_id, amount) VALUES ($1, $2, $3)",
 		fromUserID, toUserID, amount)
 	if err != nil {
 		return err
@@ -109,7 +120,7 @@ func (db *Database) TransferCoins(fromUserID, toUserID, amount int) error {
 // GetMerchByName finds merch by it's name in database...
 func (db *Database) GetMerchByName(name string) (*models.Merch, error) {
 	var merch models.Merch
-	err := db.pool.QueryRow(db.ctx, "SELECT id, name, price FROM merch WHERE name = $1", name).
+	err := db.Pool.QueryRow(db.Ctx, "SELECT id, name, price FROM merch WHERE name = $1", name).
 		Scan(&merch.ID, &merch.Name, &merch.Price)
 	if err != nil {
 		return nil, err
@@ -119,27 +130,27 @@ func (db *Database) GetMerchByName(name string) (*models.Merch, error) {
 
 // BuyMerch implements buying merch logic in database...
 func (db *Database) BuyMerch(userID, merchID, price int) error {
-	tx, err := db.pool.Begin(db.ctx)
+	tx, err := db.Pool.Begin(db.Ctx)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
 		if err != nil {
-			if rb := tx.Rollback(db.ctx); rb != nil {
+			if rb := tx.Rollback(db.Ctx); rb != nil {
 				log.Fatalf("query failed: %v, unable to abort: %v", err, rb)
 			}
 		} else {
-			err = tx.Commit(db.ctx)
+			err = tx.Commit(db.Ctx)
 		}
 	}()
 
-	_, err = tx.Exec(db.ctx, "UPDATE users SET coins = coins - $1 WHERE id = $2", price, userID)
+	_, err = tx.Exec(db.Ctx, "UPDATE users SET coins = coins - $1 WHERE id = $2", price, userID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(db.ctx, `
+	_, err = tx.Exec(db.Ctx, `
        INSERT INTO inventory (user_id, merch_id, quantity)
        VALUES ($1, $2, 1)
        ON CONFLICT (user_id, merch_id) DO UPDATE
@@ -154,7 +165,7 @@ func (db *Database) BuyMerch(userID, merchID, price int) error {
 
 // GetUserInventory gets user inventory from database...
 func (db *Database) GetUserInventory(userID int) ([]models.InventoryInfo, error) {
-	rows, err := db.pool.Query(db.ctx, `
+	rows, err := db.Pool.Query(db.Ctx, `
         SELECT m.name, i.quantity
         FROM inventory i
         JOIN merch m ON i.merch_id = m.id
@@ -187,7 +198,7 @@ func (db *Database) GetUserInventory(userID int) ([]models.InventoryInfo, error)
 func (db *Database) GetUserTransactions(userID int) (models.CoinHistory, error) {
 	var history models.CoinHistory
 
-	rows, err := db.pool.Query(db.ctx, `
+	rows, err := db.Pool.Query(db.Ctx, `
         SELECT u.username, t.amount
         FROM transactions t
         JOIN users u ON t.from_user_id = u.id
@@ -212,7 +223,7 @@ func (db *Database) GetUserTransactions(userID int) (models.CoinHistory, error) 
 		return history, err
 	}
 
-	rows, err = db.pool.Query(db.ctx, `
+	rows, err = db.Pool.Query(db.Ctx, `
         SELECT u.username, t.amount
         FROM transactions t
         JOIN users u ON t.to_user_id = u.id

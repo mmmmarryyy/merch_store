@@ -16,6 +16,12 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+type TokenValidator interface {
+	ValidateToken(tokenString string) (*Claims, error)
+}
+
+type DefaultValidator struct{}
+
 // GenerateToken generates jwt token...
 func GenerateToken(username string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
@@ -31,7 +37,7 @@ func GenerateToken(username string) (string, error) {
 }
 
 // ValidateToken checks token is valid...
-func ValidateToken(tokenString string) (*Claims, error) {
+func (dv *DefaultValidator) ValidateToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(_ *jwt.Token) (interface{}, error) {
 		return jwtKey, nil

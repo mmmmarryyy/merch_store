@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -11,7 +13,12 @@ import (
 )
 
 func main() {
-	db, err := db.NewDatabase("db", 5432, "postgres", "password", "shop") // TODO: change to environment variables
+	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
+	if err != nil {
+		log.Fatalf("Wrong port: %v", err)
+	}
+
+	db, err := db.NewDatabase(os.Getenv("DB_HOST"), port, os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

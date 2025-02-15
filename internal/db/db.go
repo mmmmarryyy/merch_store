@@ -83,13 +83,13 @@ func (db *Database) TransferCoins(fromUserID, toUserID, amount int) error {
 	}
 
 	_, err = tx.Exec(db.ctx, "UPDATE users SET coins = coins + $1 WHERE id = $2", amount, toUserID)
-	if err != nil { // TODO: add transaction to return coins to `fromUserID`
+	if err != nil {
 		return err
 	}
 
 	_, err = tx.Exec(db.ctx, "INSERT INTO transactions (from_user_id, to_user_id, amount) VALUES ($1, $2, $3)",
 		fromUserID, toUserID, amount)
-	if err != nil { // TODO: add transaction to return coins to `fromUserID` and delete coins from `toUserID`
+	if err != nil {
 		return err
 	}
 
@@ -131,28 +131,30 @@ func (db *Database) BuyMerch(userID, merchID, price int) error {
        ON CONFLICT (user_id, merch_id) DO UPDATE
        SET quantity = inventory.quantity + 1
    `, userID, merchID)
-	if err != nil { // TODO: add transaction to return coins to `userID`
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (db *Database) GetUserInventory(userID int) ([]models.Inventory, error) {
+func (db *Database) GetUserInventory(userID int) ([]models.InventoryInfo, error) {
 	rows, err := db.pool.Query(db.ctx, `
-       SELECT merch_id, quantity
-       FROM inventory
-       WHERE user_id = $1
-   `, userID)
+        SELECT m.name, i.quantity
+        FROM inventory i
+        JOIN merch m ON i.merch_id = m.id
+        WHERE i.user_id = $1
+    `, userID)
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var inventory []models.Inventory
+	var inventory []models.InventoryInfo
 	for rows.Next() {
-		var item models.Inventory
-		err = rows.Scan(&item.MerchID, &item.Quantity)
+		var item models.InventoryInfo
+		err = rows.Scan(&item.Type, &item.Quantity)
 		if err != nil {
 			return nil, err
 		}
@@ -170,18 +172,20 @@ func (db *Database) GetUserTransactions(userID int) (models.CoinHistory, error) 
 	var history models.CoinHistory
 
 	rows, err := db.pool.Query(db.ctx, `
-       SELECT from_user_id, amount
-       FROM transactions
-       WHERE to_user_id = $1
+        SELECT u.username, t.amount
+        FROM transactions t
+        JOIN users u ON t.from_user_id = u.id
+        WHERE t.to_user_id = $1
    `, userID)
+
 	if err != nil {
 		return history, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var transaction models.Transaction
-		err = rows.Scan(&transaction.FromUserID, &transaction.Amount)
+		var transaction models.TransactionInfo
+		err = rows.Scan(&transaction.Username, &transaction.Amount)
 		if err != nil {
 			return history, err
 		}
@@ -193,18 +197,20 @@ func (db *Database) GetUserTransactions(userID int) (models.CoinHistory, error) 
 	}
 
 	rows, err = db.pool.Query(db.ctx, `
-       SELECT to_user_id, amount
-       FROM transactions
-       WHERE from_user_id = $1
-   `, userID)
+        SELECT u.username, t.amount
+        FROM transactions t
+        JOIN users u ON t.to_user_id = u.id
+        WHERE t.from_user_id = $1
+    `, userID)
+
 	if err != nil {
 		return history, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var transaction models.Transaction
-		err = rows.Scan(&transaction.ToUserID, &transaction.Amount)
+		var transaction models.TransactionInfo
+		err = rows.Scan(&transaction.Username, &transaction.Amount)
 		if err != nil {
 			return history, err
 		}

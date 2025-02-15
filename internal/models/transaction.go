@@ -7,3 +7,8 @@ type Transaction struct {
 	Amount     int    `json:"amount"`
 	CreatedAt  string `json:"created_at"`
 }
+
+type TransactionInfo struct {
+	Username string `json:"username"`
+	Amount   int    `json:"amount"`
+}

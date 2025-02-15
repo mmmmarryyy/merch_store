@@ -9,15 +9,16 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
+// TODO: move structs below to other files
 type InfoResponse struct {
-	Coins       int         `json:"coins"`
-	Inventory   []Inventory `json:"inventory"` // TODO: change from []Inventory to []InventoryInfo or something more readable
-	CoinHistory CoinHistory `json:"coinHistory"`
+	Coins       int             `json:"coins"`
+	Inventory   []InventoryInfo `json:"inventory"`
+	CoinHistory CoinHistory     `json:"coinHistory"`
 }
 
 type CoinHistory struct {
-	Received []Transaction `json:"received"` // TODO: change from Transaction to something more readable like at API
-	Sent     []Transaction `json:"sent"`     // TODO: change from Transaction to something more readable like at API
+	Received []TransactionInfo `json:"received"`
+	Sent     []TransactionInfo `json:"sent"`
 }
 
 type SendCoinRequest struct {
